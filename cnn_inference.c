@@ -493,6 +493,81 @@ Tensor FlattenD(Tensor input, int dispose_of_input){
     return output;
 }
 
+Tensor Add(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
+    int i,j;
+    for(i=1; i<n_tensors; i++){
+        for(j=0; j<3; j++){
+            if(input_tensors[i-1]->dims[j] != input_tensors[i]->dims[j]){
+                fprintf(stderr, "Error: The input layers to Add() must have the same dimensions.\n");
+                fprintf(stderr, "input_tensor_%d has dim_%d=%d | input_tensor_%d has dim_%d=%d", i-1, j, input_tensors[i-1]->dims[j], i, j, input_tensors[i]->dims[j]);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    
+    Tensor output;
+    int d,h,w;
+    float ***output_array = alloc_3D(input_tensors[0]->dims[0], input_tensors[0]->dims[1], input_tensors[0]->dims[2]);
+    output = make_tensor(input_tensors[0]->dims[0], input_tensors[0]->dims[1], input_tensors[0]->dims[2], output_array);
+
+    for(d=0; d<output->dims[0]; d++){
+        for(h=0; h<output->dims[1]; h++){
+            for(w=0; w<output->dims[2]; w++){
+                output->T[d][h][w] = 0;
+                for(i=0; i<n_tensors; i++){
+                    output->T[d][h][w] += input_tensors[i]->T[d][h][w];
+                }
+            }
+        }
+    }
+
+    if(dispose_of_inputs){
+        for(i=0; i<n_tensors; i++){
+            free_tensor(input_tensors[i]);
+        }
+    }
+
+    return output;
+}
+
+Tensor Average(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
+    int i,j;
+    for(i=1; i<n_tensors; i++){
+        for(j=0; j<3; j++){
+            if(input_tensors[i-1]->dims[j] != input_tensors[i]->dims[j]){
+                fprintf(stderr, "Error: The input layers to Average() must have the same dimensions.\n");
+                fprintf(stderr, "input_tensor_%d has dim_%d=%d | input_tensor_%d has dim_%d=%d", i-1, j, input_tensors[i-1]->dims[j], i, j, input_tensors[i]->dims[j]);
+                exit(EXIT_FAILURE);
+            }
+        }
+    }
+    
+    Tensor output;
+    int d,h,w;
+    float ***output_array = alloc_3D(input_tensors[0]->dims[0], input_tensors[0]->dims[1], input_tensors[0]->dims[2]);
+    output = make_tensor(input_tensors[0]->dims[0], input_tensors[0]->dims[1], input_tensors[0]->dims[2], output_array);
+
+    for(d=0; d<output->dims[0]; d++){
+        for(h=0; h<output->dims[1]; h++){
+            for(w=0; w<output->dims[2]; w++){
+                output->T[d][h][w] = 0;
+                for(i=0; i<n_tensors; i++){
+                    output->T[d][h][w] += input_tensors[i]->T[d][h][w];
+                }
+                output->T[d][h][w] /= n_tensors;
+            }
+        }
+    }
+
+    if(dispose_of_inputs){
+        for(i=0; i<n_tensors; i++){
+            free_tensor(input_tensors[i]);
+        }
+    }
+
+    return output;
+}
+
 void print_tensor(Tensor t){
     int i,j,k;
     for(i=0; i<t->dims[0]; i++){

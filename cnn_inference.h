@@ -60,6 +60,8 @@ Tensor MaxPool(Tensor input, int height, int width, int stride, int dispose_of_i
 Tensor FlattenW(Tensor input, int dispose_of_input);
 Tensor FlattenH(Tensor input, int dispose_of_input);
 Tensor FlattenD(Tensor input, int dispose_of_input);
+Tensor Add(Tensor *input_tensors, int n_tensors, int dispose_of_inputs);
+Tensor Average(Tensor *input_tensors, int n_tensors, int dispose_of_inputs);
 
 //utility functions
 void print_tensor(Tensor t);
