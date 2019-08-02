@@ -682,4 +682,6 @@ Tensor make_tensor(int d, int h, int w, float ***array){
     new_tensor->dims[0] = d;
     new_tensor->dims[1] = h;
     new_tensor->dims[2] = w;
+
+    return new_tensor;
 }
