@@ -1,9 +1,30 @@
 #include "cnn_inference.h"
+
+/** \defgroup layergenerators Layer Generators */
+
+/** \defgroup tensoroperations Tensor Operations */
+
+/** \defgroup utilityfunctions Utility Functions */
+
+/** @ingroup layergenerators
+ * Creates a convolution layer without weights and returns a pointer to it.
+ * 
+ * @param n_kb Number of kernel boxes, which is also the number of biases
+ * @param d_kb Depth of kernel boxes
+ * @param h_kb Height of kernel boxes
+ * @param w_kb Width of kernel boxes
+ * @param stride Stride of kernel window
+ * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * 
+ * @sa new_Conv()
+ * 
+ * @return A pointer to the newly created convolution layer
+*/
 ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int padding){
-    ConvLayer *clp;
-    clp = malloc(sizeof(ConvLayer)); //clp: Convolutional Layer Pointer
-    if(clp==NULL){
-        fprintf(stderr, "Error: Unable to allocate memory to clp in new_Conv.");
+    ConvLayer *convolution_layer_pointer;
+    convolution_layer_pointer = malloc(sizeof(ConvLayer));
+    if(convolution_layer_pointer==NULL){
+        fprintf(stderr, "Error: Unable to allocate memory to convolution_layer_pointer in new_Conv.");
 		exit(EXIT_FAILURE);
     }
 
@@ -21,27 +42,41 @@ ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int pa
         boxes[n].KB = alloc_3D(d_kb, h_kb, w_kb);
     }
 
-    clp->kernel_box_group = boxes;
-    clp->n_kb = n_kb;
-    clp->bias_array.size = n_kb;
-    clp->kernel_box_dims[0]=d_kb;
-    clp->kernel_box_dims[1]=h_kb;
-    clp->kernel_box_dims[2]=w_kb;
-    //The number of biases in our layers is equal to the depth of the output tensor, which is equal to the number of kernel boxes in the layer.
-    //i.e. in Conv1 we have 32 biases, one for each layer of the output tensor which is 32x31x31
-    clp->stride = stride;
-    clp->padding = padding;
-    clp->bias_array.B = malloc(n_kb*sizeof(float));
+    convolution_layer_pointer->kernel_box_group = boxes;
+    convolution_layer_pointer->n_kb = n_kb;
+    convolution_layer_pointer->kernel_box_dims[0]=d_kb;
+    convolution_layer_pointer->kernel_box_dims[1]=h_kb;
+    convolution_layer_pointer->kernel_box_dims[2]=w_kb;
+    convolution_layer_pointer->stride = stride;
+    convolution_layer_pointer->padding = padding;
+    convolution_layer_pointer->bias_array.size = n_kb;
+    convolution_layer_pointer->bias_array.B = malloc(n_kb*sizeof(float));
 
-    return clp;
+    return convolution_layer_pointer;
 }
 
-
+/** @ingroup layergenerators
+ * Creates a convolution layer with the given weights and returns a pointer to it.
+ * 
+ * @param n_kb Number of kernel boxes, which is also the number of biases
+ * @param d_kb Depth of kernel boxes
+ * @param h_kb Height of kernel boxes
+ * @param w_kb Width of kernel boxes
+ * @param weights_array A 4D float array of dimensions (n_kb * d_kb * h_kb * w_kb) containing the kernel weights
+ * @param biases_array A float array of length n_kb conraining the biases
+ * @param stride Stride of kernel window
+ * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * @param copy Whether to make a copy of the weights, if copy==0 then instead of copying the weights the layer only gets the pointer
+ * 
+ * @sa empty_Conv()
+ * 
+ * @return A pointer to the newly created convolution layer
+*/
 ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int stride, int padding, int copy){
-    ConvLayer *clp;
-    clp = malloc(sizeof(ConvLayer)); //clp: Convolutional Layer Pointer
-    if(clp==NULL){
-        fprintf(stderr, "Error: Unable to allocate memory to clp in new_Conv.");
+    ConvLayer *convolution_layer_pointer;
+    convolution_layer_pointer = malloc(sizeof(ConvLayer)); //convolution_layer_pointer: Convolutional Layer Pointer
+    if(convolution_layer_pointer==NULL){
+        fprintf(stderr, "Error: Unable to allocate memory to convolution_layer_pointer in new_Conv.");
 		exit(EXIT_FAILURE);
     }
 
@@ -70,34 +105,43 @@ ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_a
         }
     }
 
-    clp->kernel_box_group = boxes;
-    clp->n_kb = n_kb;
-    clp->bias_array.size = n_kb;
-    clp->kernel_box_dims[0]=d_kb;
-    clp->kernel_box_dims[1]=h_kb;
-    clp->kernel_box_dims[2]=w_kb;
-    //The number of biases in our layers is equal to the depth of the output tensor, which is equal to the number of kernel boxes in the layer.
-    //i.e. in Conv1 we have 32 biases, one for each layer of the output tensor which is 32x31x31
-    clp->stride = stride;
-    clp->padding = padding;
+    convolution_layer_pointer->kernel_box_group = boxes;
+    convolution_layer_pointer->n_kb = n_kb;
+    convolution_layer_pointer->bias_array.size = n_kb;
+    convolution_layer_pointer->kernel_box_dims[0]=d_kb;
+    convolution_layer_pointer->kernel_box_dims[1]=h_kb;
+    convolution_layer_pointer->kernel_box_dims[2]=w_kb;
+    convolution_layer_pointer->stride = stride;
+    convolution_layer_pointer->padding = padding;
 
     if(copy){
-        clp->bias_array.B = malloc(n_kb*sizeof(float));
+        convolution_layer_pointer->bias_array.B = malloc(n_kb*sizeof(float));
         for(n=0; n<n_kb; n++){
-            clp->bias_array.B[n] = biases_array[n];
+            convolution_layer_pointer->bias_array.B[n] = biases_array[n];
         }
     } else {
-        clp->bias_array.B = biases_array;
+        convolution_layer_pointer->bias_array.B = biases_array;
     }
 
-    return clp;
+    return convolution_layer_pointer;
 }
 
+
+/** @ingroup layergenerators
+ * Creates a dense layer without weights and returns a pointer to it.
+ * 
+ * @param n_kb Number of kernel boxes aka number of output neurons for dense layers
+ * @param d_kb Depth of kernel boxes, this should match the depth of the expected input tensor
+ * @param h_kb Height of kernel boxes, this should match the height of the expected input tensor
+ * @param w_kb Width of the kernel boxes, this should match the width of the expected input tensor
+ * 
+ * @return A pointer to the newly created dense layer
+*/
 DenseLayer *empty_Dense(int n_kb, int d_kb, int h_kb, int w_kb){
-    DenseLayer *dlp;
-    dlp = malloc(sizeof(DenseLayer)); //dlp: Dense Layer Pointer
-    if(dlp==NULL){
-        fprintf(stderr, "Error: Unable to allocate memory to dlp in new_Dense.");
+    DenseLayer *dense_layer_pointer;
+    dense_layer_pointer = malloc(sizeof(DenseLayer)); //dense_layer_pointer: Dense Layer Pointer
+    if(dense_layer_pointer==NULL){
+        fprintf(stderr, "Error: Unable to allocate memory to dense_layer_pointer in new_Dense.");
 		exit(EXIT_FAILURE);
     }
 
@@ -115,28 +159,37 @@ DenseLayer *empty_Dense(int n_kb, int d_kb, int h_kb, int w_kb){
         boxes[n].KB = alloc_3D(d_kb, h_kb, w_kb);
     }
 
-    dlp->kernel_box_group = boxes;
-    dlp->n_kb = n_kb;
-    dlp->kernel_box_dims[0] = d_kb;
-    dlp->kernel_box_dims[1] = h_kb;
-    dlp->kernel_box_dims[2] = w_kb;
-    dlp->bias_array.B = malloc(n_kb*sizeof(float));
+    dense_layer_pointer->kernel_box_group = boxes;
+    dense_layer_pointer->n_kb = n_kb;
+    dense_layer_pointer->kernel_box_dims[0] = d_kb;
+    dense_layer_pointer->kernel_box_dims[1] = h_kb;
+    dense_layer_pointer->kernel_box_dims[2] = w_kb;
+    dense_layer_pointer->bias_array.B = malloc(n_kb*sizeof(float));
 
-    /*
-    As you may have noticed Dense layers and Conv layers are basically identical.
-    The only difference is that the kernel boxes in the Dense layers have the same dimensions as the input tensor(and there are no strides or paddings).
-    Because we're Flattening before feeding the tensor to the Dense Layer this is much more like a traditional NN layer.
-    Also, because we're Flattening, you can basically think of n_kb as the number of neurons in this Dense layer.
-    */
-
-   return dlp;
+   return dense_layer_pointer;
 }
 
+
+/** @ingroup layergenerators
+ * Creates a dense layer with the given weights and returns a pointer to it.
+ * 
+ * @param n_kb Number of kernel boxes aka number of output neurons for dense layers
+ * @param d_kb Depth of kernel boxes, this should match the depth of the expected input tensor
+ * @param h_kb Height of kernel boxes, this should match the height of the expected input tensor
+ * @param w_kb Width of the kernel boxes, this should match the width of the expected input tensor
+ * @param weights_array A 4D float array of dimensions (n_kb * d_kb * h_kb * w_kb) containing the kernel weights
+ * @param biases_array A float array of length n_kb conraining the biases
+ * @param copy Whether to make a copy of the weights, if copy==0 then instead of copying the weights the layer only gets the pointer
+ * 
+ * @sa empty_Dense()
+ * 
+ * @return A pointer to the newly created dense layer
+*/
 DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int copy){
-    DenseLayer *dlp;
-    dlp = malloc(sizeof(DenseLayer)); //dlp: Dense Layer Pointer
-    if(dlp==NULL){
-        fprintf(stderr, "Error: Unable to allocate memory to dlp in new_Dense.");
+    DenseLayer *dense_layer_pointer;
+    dense_layer_pointer = malloc(sizeof(DenseLayer)); //dense_layer_pointer: Dense Layer Pointer
+    if(dense_layer_pointer==NULL){
+        fprintf(stderr, "Error: Unable to allocate memory to dense_layer_pointer in new_Dense.");
 		exit(EXIT_FAILURE);
     }
 
@@ -165,32 +218,39 @@ DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights
         }
     }
 
-    dlp->kernel_box_group = boxes;
-    dlp->n_kb = n_kb;
-    dlp->kernel_box_dims[0] = d_kb;
-    dlp->kernel_box_dims[1] = h_kb;
-    dlp->kernel_box_dims[2] = w_kb;
+    dense_layer_pointer->kernel_box_group = boxes;
+    dense_layer_pointer->n_kb = n_kb;
+    dense_layer_pointer->kernel_box_dims[0] = d_kb;
+    dense_layer_pointer->kernel_box_dims[1] = h_kb;
+    dense_layer_pointer->kernel_box_dims[2] = w_kb;
 
     if(copy){
-        dlp->bias_array.B = malloc(n_kb*sizeof(float));
+        dense_layer_pointer->bias_array.B = malloc(n_kb*sizeof(float));
         for(n=0; n<n_kb; n++){
-            dlp->bias_array.B[n] = biases_array[n];
+            dense_layer_pointer->bias_array.B[n] = biases_array[n];
         }
     } else {
-        dlp->bias_array.B = biases_array;
+        dense_layer_pointer->bias_array.B = biases_array;
     }
-    dlp->bias_array.size = n_kb;
+    dense_layer_pointer->bias_array.size = n_kb;
 
-    return dlp;
-
-    /*
-    As you may have noticed Dense layers and Conv layers are basically identical.
-    The only difference is that the kernel boxes in the Dense layers have the same dimensions as the input tensor(and there are no strides or paddings).
-    Because we're Flattening before feeding the tensor to the Dense Layer this is much more like a traditional NN layer.
-    Also, because we're Flattening, you can basically think of n_kb as the number of neurons in this Dense layer.
-    */
+    return dense_layer_pointer;
 }
 
+
+/** @ingroup tensoroperations
+ * @brief Does a convolution operation
+ * @details Takes the given tensor through the given convolution layer before applying the given activation function
+ * 
+ * @param input Input tensor
+ * @param layer The convolution layer
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * @param activation A function pointer to the activation function
+ * 
+ * @sa Dense()
+ * 
+ * @return The output tensor  
+*/
 Tensor Conv(Tensor input, ConvLayer *layer, int dispose_of_input, Tensor (*activation)(Tensor,int)){
     if(input->dims[0]!=layer->kernel_box_dims[0]){
         fprintf(stderr, "Error: The depth of the kernel boxes in this layer(%d) and that of its input tensor(%d) must match", layer->kernel_box_dims[0], input->dims[0]);
@@ -203,10 +263,11 @@ Tensor Conv(Tensor input, ConvLayer *layer, int dispose_of_input, Tensor (*activ
 
     int output_d = layer->n_kb;
     int output_w, output_h;
+    
+    // The padding terms in the formulas are omitted because the input tensor at this point has already been padded
+    // And its dimensions have been updated accordingly
     output_h = ((input->dims[1] /*+ 2*layer->padding */ - layer->kernel_box_dims[1])/layer->stride)+1;
     output_w = ((input->dims[2] /*+ 2*layer->padding */ - layer->kernel_box_dims[2])/layer->stride)+1;
-    //This is just the formula for getting the output height and width given the input dimensions, padding, kernel(filter) dimensions and stride
-    //In our case output_h=output_w as we have square kernels(filters)
     
     float ***output_array = alloc_3D(output_d,output_h,output_w);
 
@@ -245,6 +306,20 @@ Tensor Conv(Tensor input, ConvLayer *layer, int dispose_of_input, Tensor (*activ
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * @brief Does a dense operation
+ * @details Takes the given tensor through the given dense layer before applying the given activation function
+ * 
+ * @param input Input tensor
+ * @param layer The dense layer
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * @param activation A function pointer to the activation function
+ * 
+ * @sa Conv()
+ * 
+ * @return The output tensor  
+*/
 Tensor Dense(Tensor input, DenseLayer *layer, int dispose_of_input, Tensor (*activation)(Tensor,int)){
     if(input->dims[0]!=layer->kernel_box_dims[0] || input->dims[1]!=layer->kernel_box_dims[1] || input->dims[2]!=layer->kernel_box_dims[2]){
         fprintf(stderr,"Error: The dimensions of the kernel boxes of the Dense layer must exactly match those of the input tensor.\n");
@@ -253,7 +328,7 @@ Tensor Dense(Tensor input, DenseLayer *layer, int dispose_of_input, Tensor (*act
     }
 
     int output_d = layer->n_kb;
-    int output_w =1, output_h = 1; //You can get this from the formula above as well
+    int output_w =1, output_h = 1;
     
     float ***output_array = alloc_3D(output_d,output_h,output_w);
 
@@ -290,6 +365,17 @@ Tensor Dense(Tensor input, DenseLayer *layer, int dispose_of_input, Tensor (*act
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Carries out the sigmoid activation
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa linear_activation(), ReLU_activation()
+ * 
+ * @return The output tensor
+*/
 Tensor sigmoid_activation(Tensor input, int dispose_of_input){
     Tensor output;
     int d,h,w;
@@ -312,6 +398,17 @@ Tensor sigmoid_activation(Tensor input, int dispose_of_input){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Carries out the ReLU activation
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa sigmoid_activation(), linear_activation()
+ * 
+ * @return The output tensor
+*/
 Tensor ReLU_activation(Tensor input, int dispose_of_input){
     Tensor output;
     int d,h,w;
@@ -334,16 +431,27 @@ Tensor ReLU_activation(Tensor input, int dispose_of_input){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Carries out the linear activation
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa sigmoid_activation(), ReLU_activation()
+ * 
+ * @return The output tensor
+*/
 Tensor linear_activation(Tensor input, int dispose_of_input){
+    if(dispose_of_input)
+        return input;
+    
     Tensor output;
     int d,h,w;
 
-    if(dispose_of_input){
-        output = input;
-    } else {
-        float ***output_array = alloc_3D(input->dims[0], input->dims[1], input->dims[2]);
-        output = make_tensor(input->dims[0], input->dims[1], input->dims[2], output_array);
-    }
+    float ***output_array = alloc_3D(input->dims[0], input->dims[1], input->dims[2]);
+    output = make_tensor(input->dims[0], input->dims[1], input->dims[2], output_array);
+    
 
     for(d=0; d<output->dims[0]; d++){
         for(h=0; h<output->dims[1]; h++){
@@ -352,10 +460,18 @@ Tensor linear_activation(Tensor input, int dispose_of_input){
             }
         }
     }
-
-    return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Applies padding to the input tensor
+ * 
+ * @param input Input tensor
+ * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @return The output tensor
+*/
 Tensor apply_padding(Tensor input, int padding, int dispose_of_input){
     int output_d = input->dims[0];
     int output_h = input->dims[1] + 2*padding;
@@ -390,6 +506,19 @@ Tensor apply_padding(Tensor input, int padding, int dispose_of_input){
     return output;
 }
 
+
+
+/** @ingroup tensoroperations
+ * Executes max pooling on the given input tensor
+ * 
+ * @param input Input tensor
+ * @param height Height of the pooling window
+ * @param width Width of the pooling window
+ * @param stride Stride of the pooling window
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @return The output tensor
+*/
 Tensor MaxPool(Tensor input, int height, int width, int stride, int dispose_of_input){
     int output_d = input->dims[0];
     int output_w, output_h;
@@ -427,6 +556,17 @@ Tensor MaxPool(Tensor input, int height, int width, int stride, int dispose_of_i
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Flattens the input tensor into its width such that the output depth and height are 1.
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa FlattenH(), FlattenD()
+ * 
+ * @return The output tensor
+*/
 Tensor FlattenW(Tensor input, int dispose_of_input){
     int input_d = input->dims[0], input_h = input->dims[1], input_w = input->dims[2];
 
@@ -449,6 +589,17 @@ Tensor FlattenW(Tensor input, int dispose_of_input){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Flattens the input tensor into its height such that the output depth and width are 1.
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa FlattenW(), FlattenD()
+ * 
+ * @return The output tensor
+*/
 Tensor FlattenH(Tensor input, int dispose_of_input){
     int input_d = input->dims[0], input_h = input->dims[1], input_w = input->dims[2];
 
@@ -471,6 +622,17 @@ Tensor FlattenH(Tensor input, int dispose_of_input){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Flattens the input tensor into its depth such that the output height and width are 1.
+ * 
+ * @param input Input tensor
+ * @param dispose_of_input Whether to free or overwrite the input tensor, if dispose_of_input==0 then the input tensor is lost
+ * 
+ * @sa FlattenW(), FlattenH()
+ * 
+ * @return The output tensor
+*/
 Tensor FlattenD(Tensor input, int dispose_of_input){
     int input_d = input->dims[0], input_h = input->dims[1], input_w = input->dims[2];
 
@@ -493,6 +655,18 @@ Tensor FlattenD(Tensor input, int dispose_of_input){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * Does an element-wise summation of the tensors in the array.
+ * 
+ * @param input_tensors Array of tensors
+ * @param n_tensors Number of tensors in the array
+ * @param dispose_of_inputs Whether to free or overwrite the input tensors, if dispose_of_inputs==0 then the input tensors are lost
+ * 
+ * @sa Average()
+ * 
+ * @return The output tensor
+*/
 Tensor Add(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
     int i,j;
     for(i=1; i<n_tensors; i++){
@@ -530,6 +704,20 @@ Tensor Add(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
     return output;
 }
 
+
+/** @ingroup tensoroperations
+ * After doing an element-wise summation of the tensors in the array,
+ * the function divides each element in the resulting array by n_tensors
+ * to get the element-wise means
+ * 
+ * @param input_tensors Array of tensors
+ * @param n_tensors Number of tensors in the array
+ * @param dispose_of_inputs Whether to free or overwrite the input tensors, if dispose_of_inputs==0 then the input tensors are lost
+ * 
+ * @sa Add()
+ * 
+ * @return The output tensor
+*/
 Tensor Average(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
     int i,j;
     for(i=1; i<n_tensors; i++){
@@ -568,6 +756,12 @@ Tensor Average(Tensor *input_tensors, int n_tensors, int dispose_of_inputs){
     return output;
 }
 
+
+/** @ingroup utilityfunctions
+ * Prints the tensor to stdout.
+ * 
+ * @param t Tensor to be printed
+*/
 void print_tensor(Tensor t){
     int i,j,k;
     for(i=0; i<t->dims[0]; i++){
@@ -582,6 +776,18 @@ void print_tensor(Tensor t){
     }
 }
 
+/** @ingroup utilityfunctions
+ * Allocates memory for a 4D float array with dimensions (b * d * h * w) and returns the pointer.
+ * 
+ * @param b Dimension 0, size of float *** array
+ * @param d Dimension 1, size of float ** array
+ * @param h Dimension 2, size of float * array
+ * @param w Dimension 3, size of float array
+ * 
+ * @sa alloc_3D
+ * 
+ * @return The pointer to the allocated memory
+*/
 float ****alloc_4D(int b, int d, int h, int w){
     float **** new;
     new = malloc(b*sizeof(float***));
@@ -615,6 +821,18 @@ float ****alloc_4D(int b, int d, int h, int w){
     return new;
 }
 
+
+/** @ingroup utilityfunctions
+ * Allocates memory for a 3D float array with dimensions (d * h * w) and returns the pointer.
+ * 
+ * @param d Dimension 0, size of float ** array
+ * @param h Dimension 1, size of float * array
+ * @param w Dimension 2, size of float array
+ * 
+ * @sa alloc_4D
+ * 
+ * @return The pointer to the allocated memory
+*/
 float ***alloc_3D(int d, int h, int w){
     float ***new;
     new = malloc(d*sizeof(float**));
@@ -641,6 +859,12 @@ float ***alloc_3D(int d, int h, int w){
     return new;
 }
 
+
+/** @ingroup utilityfunctions
+ * Prints information about the given convolution layer
+ * 
+ * @param layer Convolution layer whose information is to be printed 
+*/
 void print_conv_details(ConvLayer layer){
     printf("Convolutional layer at %x\n\n", &layer);
     printf("\tn_kb = %d\n", layer.n_kb);
@@ -663,6 +887,12 @@ void print_conv_details(ConvLayer layer){
     }
 }
 
+
+/** @ingroup utilityfunctions
+ * Frees the memory occupied by the tensor t
+ * 
+ * @param t The tensor to be freed
+*/
 void free_tensor(Tensor t){
     int d,h;
     for(d=0; d<t->dims[0]; d++){
@@ -675,6 +905,17 @@ void free_tensor(Tensor t){
     //free(t);
 }
 
+
+/** @ingroup utilityfunctions
+ * Creates and configures a new tensor of dimensions (d * h * w)
+ * 
+ * @param d Depth of tensor
+ * @param h Height of tensor
+ * @param w Width of tensor
+ * @param array The 3D float array with dimensions (d * h * w) from which the tensor is going to be built
+ * 
+ * @return The newly created tensor
+*/
 Tensor make_tensor(int d, int h, int w, float ***array){
     Tensor new_tensor;
     new_tensor = malloc(sizeof(struct tensor));
