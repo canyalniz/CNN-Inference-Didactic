@@ -1,6 +1,6 @@
 #include "jpg_format.h"
 
-float ***load_RGB(char **filenames, int h, int w){
+float ***load_RGB(char filenames[3][MAX_FN], int h, int w){
     FILE *fp;
     int f,i,j;
 

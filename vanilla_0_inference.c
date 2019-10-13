@@ -7,21 +7,12 @@ int main(){
     clock_t start, end;
     double cpu_time_used;
 
-    int f;
-    char **fn;
-    fn = malloc(3*sizeof(char*)); //This array is going to hold the three channels of the jpg, you need to run jpg_to_txt.py first
-    for(f=0; f<3; f++){
-        fn[f] = malloc(MAX_FN*sizeof(char));
-    }
-    
-    fn[0] = "img_0.txt"; //Channel 1 file name
-    fn[1] = "img_1.txt"; //Channel 2 file name
-    fn[2] = "img_2.txt"; //Channel 3 file name
+    char fn[3][MAX_FN] = {"img_0.txt", "img_1.txt", "img_2.txt"};
 
     float ***img;
     img = load_RGB(fn, 63, 63); //loads the jpg
     
-    Tensor input;
+    Tensor *input;
     input = make_tensor(3, 63, 63, img);
 
 
@@ -43,16 +34,16 @@ int main(){
     out = empty_Dense(1, 512, 1, 1);
     load_Dense(out, 10);
 
-    Tensor x, output;
+    Tensor *x, *output;
 
     start = clock();
-    x = Conv(input, conv1, 1, ReLU_activation);
+    x = Conv(input, conv1, ReLU_activation, 1, 1);
     x = MaxPool(x, 3, 3, 2, 1);
-    x = Conv(x, conv2, 0, ReLU_activation);
+    x = Conv(x, conv2, ReLU_activation, 1, 1);
     x = MaxPool(x, 3, 3, 2, 1);
     x = FlattenD(x, 1);
-    x = Dense(x, fc, 1, ReLU_activation);
-    output = Dense(x, out, 1, linear_activation); //This used to be a sigmoid activation but for clarity I changed the model's activation to linear
+    x = Dense(x, fc, ReLU_activation, 1, 1);
+    output = Dense(x, out, linear_activation, 1, 1); //This used to be a sigmoid activation but for clarity I changed the model's activation to linear
     end = clock();
     print_tensor(output);
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;

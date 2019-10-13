@@ -4,71 +4,56 @@
 #include <stdlib.h>
 #include <math.h>
 
-typedef struct tensor *Tensor;
-typedef struct Kernel_Box KernelBox;
-typedef struct Bias_Array BiasArray;
-typedef struct Convolutional_Layer ConvLayer;
-typedef struct Dense_Layer DenseLayer; //aka Fully Connected Layer
 
-struct tensor{
+typedef struct {
     int dims[3]; //Dimensions
     float ***T; //Tensor itself
-};
+} Tensor;
 
-struct Kernel_Box{ //Each kernel box holds a depth of kernels, i.e. in Conv1 we have 32 'kernel boxes', each 3x3x3
-    int dims[3];
-    float ***KB;
-};
-
-
-struct Bias_Array{
-    int size;
-    float *B;
-};
-
-struct Convolutional_Layer{
+typedef struct {
     int n_kb; //Number of kernel boxes in this layer
     int kernel_box_dims[3];
-    KernelBox *kernel_box_group;
-    BiasArray bias_array;
+    float ****kernel_box_group;
+    float *bias_array;
     int stride;
     int padding;
-};
+} ConvLayer;
 
-
-struct Dense_Layer{ //aka Fully Connected Layer
+typedef struct {
     int n_kb; //Number of kernel boxes in this layer
     int kernel_box_dims[3];
-    KernelBox *kernel_box_group;
-    BiasArray bias_array;
-};
+    float ****kernel_box_group;
+    float *bias_array;
+} DenseLayer;  //aka Fully Connected Layer
 
 //Layer generators
 ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int padding);
-ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int stride, int padding, int copy);
+ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int stride, int padding);
 DenseLayer *empty_Dense(int n_kb, int d_kb, int h_kb, int w_kb);
-DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int copy);
+DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array);
 
 //Tensor operations
-Tensor Conv(Tensor input, ConvLayer *layer, int dispose_of_input, Tensor (*activation)(Tensor,int));
-Tensor Dense(Tensor input, DenseLayer *layer, int dispose_of_input, Tensor (*activation)(Tensor,int));
-Tensor sigmoid_activation(Tensor input, int dispose_of_input);
-Tensor ReLU_activation(Tensor input, int dispose_of_input);
-Tensor linear_activation(Tensor input, int dispose_of_input);
-Tensor apply_padding(Tensor input, int padding, int dispose_of_input);
-Tensor MaxPool(Tensor input, int height, int width, int stride, int dispose_of_input);
-Tensor FlattenW(Tensor input, int dispose_of_input);
-Tensor FlattenH(Tensor input, int dispose_of_input);
-Tensor FlattenD(Tensor input, int dispose_of_input);
-Tensor Add(Tensor *input_tensors, int n_tensors, int dispose_of_inputs);
-Tensor Average(Tensor *input_tensors, int n_tensors, int dispose_of_inputs);
+Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer);
+Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer);
+Tensor *sigmoid_activation(Tensor *input, int free_input);
+Tensor *ReLU_activation(Tensor *input, int free_input);
+Tensor *linear_activation(Tensor *input, int free_input);
+Tensor *apply_padding(Tensor *input, int padding, int free_input);
+Tensor *MaxPool(Tensor *input, int height, int width, int stride, int free_input);
+Tensor *FlattenW(Tensor *input, int free_input);
+Tensor *FlattenH(Tensor *input, int free_input);
+Tensor *FlattenD(Tensor *input, int free_input);
+Tensor *Add(Tensor **input_tensors, int n_tensors, int free_inputs);
+Tensor *Average(Tensor **input_tensors, int n_tensors, int free_inputs);
 
 //utility functions
-void print_tensor(Tensor t);
+void print_tensor(Tensor *t);
 float ****alloc_4D(int b, int d, int h, int w);
 float ***alloc_3D(int d, int h, int w);
 void print_conv_details(ConvLayer layer);
-void free_tensor(Tensor t);
-Tensor make_tensor(int d, int h, int w, float ***array);
+void free_tensor(Tensor *t);
+Tensor *make_tensor(int d, int h, int w, float ***array);
+void free_ConvLayer(ConvLayer *layer);
+void free_DenseLayer(DenseLayer *layer);
 
 #endif

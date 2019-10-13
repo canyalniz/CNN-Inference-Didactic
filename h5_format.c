@@ -14,7 +14,7 @@ void load_Conv(ConvLayer *layer, int layer_id){
             
             for(d=0; d<layer->kernel_box_dims[0]; d++){
                 for(n=0; n<layer->n_kb; n++){
-                    fscanf(fp, "%f", &(layer->kernel_box_group[n].KB[d][h][w]));
+                    fscanf(fp, "%f", &(layer->kernel_box_group[n][d][h][w]));
                 }
             }
             fclose(fp);
@@ -28,7 +28,7 @@ void load_Conv(ConvLayer *layer, int layer_id){
     }
 
     for(n=0; n<layer->n_kb; n++){
-        fscanf(fp, "%f", &(layer->bias_array.B[n]));
+        fscanf(fp, "%f", &(layer->bias_array[n]));
     }
     fclose(fp);
 }
@@ -47,7 +47,7 @@ void load_Dense(DenseLayer *layer, int layer_id){
             
             for(d=0; d<layer->kernel_box_dims[0]; d++){
                 for(n=0; n<layer->n_kb; n++){
-                    fscanf(fp, "%f", &(layer->kernel_box_group[n].KB[d][h][w]));
+                    fscanf(fp, "%f", &(layer->kernel_box_group[n][d][h][w]));
                 }
             }
             fclose(fp);
@@ -61,7 +61,7 @@ void load_Dense(DenseLayer *layer, int layer_id){
     }
 
     for(n=0; n<layer->n_kb; n++){
-        fscanf(fp, "%f", &(layer->bias_array.B[n]));
+        fscanf(fp, "%f", &(layer->bias_array[n]));
     }
     fclose(fp);
 }
