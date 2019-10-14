@@ -13,14 +13,17 @@
  * @param d_kb Depth of kernel boxes
  * @param h_kb Height of kernel boxes
  * @param w_kb Width of kernel boxes
- * @param stride Stride of kernel window
- * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * @param stride_x Stride of kernel window on the x axis(horizontal)
+ * @param stride_y Stride of kernel window on the y axis(vertical)
+ * @param padding Option from padding_mode (VALID or SAME). VALID means no padding will be done, 
+ * SAME means the input tensor will be padded in such a way that the output of the following convolution operation will
+ * have the same height and width as those of the input tensor.
  * 
- * @sa new_Conv()
+ * @sa new_Conv(), padding_mode
  * 
  * @return A pointer to the newly created convolution layer
 */
-ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int padding){
+ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride_x, int stride_y, padding_mode padding){
     ConvLayer *convolution_layer_pointer;
     convolution_layer_pointer = malloc(sizeof(ConvLayer));
     if(convolution_layer_pointer==NULL){
@@ -36,7 +39,8 @@ ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int pa
     convolution_layer_pointer->kernel_box_group = alloc_4D(n_kb, d_kb, h_kb, w_kb);
     convolution_layer_pointer->bias_array = malloc(n_kb*sizeof(float));
 
-    convolution_layer_pointer->stride = stride;
+    convolution_layer_pointer->stride_x = stride_x;
+    convolution_layer_pointer->stride_y = stride_y;
     convolution_layer_pointer->padding = padding;
 
     return convolution_layer_pointer;
@@ -51,14 +55,17 @@ ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride, int pa
  * @param w_kb Width of kernel boxes
  * @param weights_array A 4D float array of dimensions (n_kb * d_kb * h_kb * w_kb) containing the kernel weights
  * @param biases_array A float array of length n_kb conraining the biases
- * @param stride Stride of kernel window
- * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * @param stride_x Stride of kernel window on the x axis(horizontal)
+ * @param stride_y Stride of kernel window on the y axis(vertical)
+ * @param padding Option from padding_mode (VALID or SAME). VALID means no padding will be done, 
+ * SAME means the input tensor will be padded in such a way that the output of the following convolution operation will
+ * have the same height and width as those of the input tensor.
  * 
  * @sa empty_Conv()
  * 
  * @return A pointer to the newly created convolution layer
 */
-ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int stride, int padding){
+ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array, int stride_x, int stride_y, padding_mode padding){
     ConvLayer *convolution_layer_pointer;
     convolution_layer_pointer = malloc(sizeof(ConvLayer)); //convolution_layer_pointer: Convolutional Layer Pointer
     if(convolution_layer_pointer==NULL){
@@ -74,7 +81,8 @@ ConvLayer *new_Conv(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_a
     convolution_layer_pointer->kernel_box_group = weights_array;
     convolution_layer_pointer->bias_array = biases_array;
 
-    convolution_layer_pointer->stride = stride;
+    convolution_layer_pointer->stride_x = stride_x;
+    convolution_layer_pointer->stride_y = stride_y;
     convolution_layer_pointer->padding = padding;
 
     return convolution_layer_pointer;
@@ -165,8 +173,8 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
         exit(EXIT_FAILURE);
     }
 
-    if(layer->padding!=0){
-        input = apply_padding(input,layer->padding,free_input);
+    if(layer->padding==SAME){
+        input = apply_same_padding(input, layer, free_input);
         free_input = 1; // if the padding operation makes 'input' point to a copy of the original input then freeing 'input' is safe
     }
 
@@ -175,8 +183,8 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
     
     // The padding terms in the formulas are omitted because the input tensor at this point has already been padded
     // And its dimensions have been updated accordingly
-    output_h = ((input->dims[1] /*+ 2*layer->padding */ - layer->kernel_box_dims[1])/layer->stride)+1;
-    output_w = ((input->dims[2] /*+ 2*layer->padding */ - layer->kernel_box_dims[2])/layer->stride)+1;
+    output_h = ((input->dims[1] /*+ 2*layer->padding */ - layer->kernel_box_dims[1])/layer->stride_y)+1;
+    output_w = ((input->dims[2] /*+ 2*layer->padding */ - layer->kernel_box_dims[2])/layer->stride_x)+1;
     
     float ***output_array = alloc_3D(output_d,output_h,output_w);
 
@@ -188,8 +196,8 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
             for(w=0; w<output_w; w++){ //output width
                 output_array[d][h][w] = 0; //this will hold the sum of the convolutions over each "channel" of the input tensor(the sum over its depth)
                 for(id=0; id<input->dims[0]; id++){ //input depth
-                    by = h*layer->stride; //"begin y" defines where the top edge of the kernel window is on the input layer
-                    bx = w*layer->stride; //"begin x" defines where the left edge of the kernel window is on the input layer
+                    by = h*layer->stride_y; //"begin y" defines where the top edge of the kernel window is on the input layer
+                    bx = w*layer->stride_x; //"begin x" defines where the left edge of the kernel window is on the input layer
                     for(i=0; i<(layer->kernel_box_dims[1]); i++){ //traverses the height of kernel window
                         for(j=0; j<(layer->kernel_box_dims[2]); j++){ //traverses the width of kernel window
                             output_array[d][h][w] += input->T[id][by+i][bx+j] * layer->kernel_box_group[d][id][i][j];
@@ -377,36 +385,68 @@ Tensor *linear_activation(Tensor *input, int free_input){
 
 
 /** @ingroup tensoroperations
- * Applies padding to the input tensor
+ * Applies padding to the input tensor. 
+ * 
+ * If SAME padding is desired but due to the operation parameters symmetric padding is not possible,
+ * then this function will follow the tensorflow backend implementation and the bottom and the
+ * right side of the tensor will get the additional padding.
  * 
  * @param input Input tensor
- * @param padding Amount of padding, it is represented by the number of 1 pixel-wide frames around the input
+ * @param layer Convolution layer which requires SAME padding
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
+ * 
+ * @sa padding_mode
  * 
  * @return The output tensor
 */
-Tensor *apply_padding(Tensor *input, int padding, int free_input){
+Tensor *apply_same_padding(Tensor *input, ConvLayer *layer, int free_input){
+    int padding_x, padding_y;
+    padding_x = layer->stride_x * (input->dims[2]-1) - input->dims[2] + layer->kernel_box_dims[2]; // left + right
+    padding_y = layer->stride_y * (input->dims[1]-1) - input->dims[1] + layer->kernel_box_dims[1]; // top + bottom
+
     int output_d = input->dims[0];
-    int output_h = input->dims[1] + 2*padding;
-    int output_w = input->dims[2] + 2*padding;
+    int output_h = input->dims[1] + padding_y;
+    int output_w = input->dims[2] + padding_x;
 
     float ***output_array = alloc_3D(output_d,output_h,output_w);
 
-    int d,h,w,x,y;
+    int d,x,y, squeeze_along_x, squeeze_along_y;
     
     for(d=0; d<output_d; d++){
-        //pad top and bottom
-        for(x=0; x<output_w; x++){
-            output_array[d][0][x] = output_array[d][output_h-1][x] = 0;
+        //pad symmetric top and bottom
+        for(squeeze_along_y=0; squeeze_along_y<(padding_y/2); squeeze_along_y++){
+            for(x=0; x<output_w; x++){
+                output_array[d][squeeze_along_y][x] = output_array[d][(output_h-1)-squeeze_along_y][x] = 0;
+            }
         }
-        //pad left and right
-        for(y=0; y<output_h; y++){
-            output_array[d][y][0] = output_array[d][y][output_w-1] = 0;
+
+        //handle asymmetry along vertical axis
+        if(padding_y%2){
+            //pad extra bottom
+            for(x=0; x<output_w; x++){
+                output_array[d][(output_h-1)-(padding_y/2)][x] = 0;
+            }
         }
+        
+        //pad symmetric left and right
+        for(squeeze_along_x=0; squeeze_along_x<(padding_x/2); squeeze_along_x++){
+            for(y=0; y<output_h; y++){
+                output_array[d][y][squeeze_along_x] = output_array[d][y][(output_w-1)-squeeze_along_x] = 0;
+            }
+        }
+
+        //handle asymmetry along horizontal axis
+        if(padding_x%2){
+            //pad extra right
+            for(y=0; y<output_h; y++){
+                output_array[d][y][(output_w-1)-(padding_x/2)] = 0;
+            }
+        }
+
         //load the middle
-        for(x=padding; x<(output_w-padding); x++){
-            for(y=padding; y<(output_h-padding); y++){
-                output_array[d][y][x] = input->T[d][y-padding][x-padding];
+        for(x=(padding_x/2); x<(output_w-(padding_x/2)-(padding_x%2)); x++){
+            for(y=(padding_y/2); y<(output_h-(padding_y/2)-(padding_y%2)); y++){
+                output_array[d][y][x] = input->T[d][y-(padding_y/2)][x-(padding_x/2)];
             }    
         }
     }
@@ -427,15 +467,17 @@ Tensor *apply_padding(Tensor *input, int padding, int free_input){
  * @param input Input tensor
  * @param height Height of the pooling window
  * @param width Width of the pooling window
- * @param stride Stride of the pooling window
+ * @param stride_x Stride of kernel window on the x axis(horizontal)
+ * @param stride_y Stride of kernel window on the y axis(vertical)
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
  * 
  * @return The output tensor
 */
-Tensor *MaxPool(Tensor *input, int height, int width, int stride, int free_input){
+Tensor *MaxPool(Tensor *input, int height, int width, int stride_x, int stride_y, int free_input){
     int output_d = input->dims[0];
     int output_w, output_h;
-    output_w = output_h = ((input->dims[1] - height)/stride)+1; // The same formula from the Conv layer
+    output_w = ((input->dims[1] - height)/stride_x)+1; // The same formula from the Conv layer
+    output_h = ((input->dims[1] - height)/stride_y)+1; // The same formula from the Conv layer
 
     float ***output_array = alloc_3D(output_d,output_h,output_w);
 
@@ -446,8 +488,8 @@ Tensor *MaxPool(Tensor *input, int height, int width, int stride, int free_input
     for(d=0; d<output_d; d++){ //output depth
         for(h=0; h<output_h; h++){ //output height
             for(w=0; w<output_w; w++){ //output width
-                by = h*stride;
-                bx = w*stride;
+                by = h*stride_y;
+                bx = w*stride_x;
                 max = input->T[d][by][bx];
                 for(i=0; i<height; i++){ //traverses the height of window
                     for(j=0; j<width; j++){ //traverses the width of window
@@ -782,7 +824,8 @@ void print_conv_details(ConvLayer layer){
     printf("Convolutional layer at %x\n\n", &layer);
     printf("\tn_kb = %d\n", layer.n_kb);
     printf("\tkernel_box_dims = %d,%d,%d\n", layer.kernel_box_dims[0], layer.kernel_box_dims[1], layer.kernel_box_dims[2]);
-    printf("\tstride = %d\n", layer.stride);
+    printf("\tstride_x = %d\n", layer.stride_x);
+    printf("\tstride_y = %d\n", layer.stride_y);
     printf("\tpadding = %d\n\n", layer.padding);
 
     int n,d,h,w;
