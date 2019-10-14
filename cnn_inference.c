@@ -161,13 +161,12 @@ DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights
  * @param layer The convolution layer
  * @param activation A function pointer to the activation function
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
- * @param free_layer Whether to free the operation layer, if free_layer==1 then the layer is destroyed
  * 
  * @sa Dense()
  * 
  * @return The output tensor  
 */
-Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer){
+Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input){
     if(input->dims[0]!=layer->kernel_box_dims[0]){
         fprintf(stderr, "Error: The depth of the kernel boxes in this layer(%d) and that of its input tensor(%d) must match", layer->kernel_box_dims[0], input->dims[0]);
         exit(EXIT_FAILURE);
@@ -211,10 +210,6 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
         }
     }
     
-    if(free_layer){
-        free_ConvLayer(layer);
-    }
-
     if(free_input) free_tensor(input);
 
     Tensor *output;
@@ -232,13 +227,12 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
  * @param layer The dense layer
  * @param activation A function pointer to the activation function
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
- * @param free_layer Whether to free the operation layer, if free_layer==1 then the layer is destroyed
  * 
  * @sa Conv()
  * 
  * @return The output tensor  
 */
-Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer){
+Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input){
     if(input->dims[0]!=layer->kernel_box_dims[0] || input->dims[1]!=layer->kernel_box_dims[1] || input->dims[2]!=layer->kernel_box_dims[2]){
         fprintf(stderr,"Error: The dimensions of the kernel boxes of the Dense layer must exactly match those of the input tensor.\n");
         fprintf(stderr,"input has d:%d h:%d w:%d | kernel boxes have d:%d h:%d w:%d", input->dims[0], input->dims[1], input->dims[2], layer->kernel_box_dims[0], layer->kernel_box_dims[1], layer->kernel_box_dims[2]);
@@ -270,10 +264,6 @@ Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,i
                 output_array[d][h][w] += layer->bias_array[d];
             }
         }
-    }
-
-    if(free_layer){
-        free_DenseLayer(layer);
     }
 
     if(free_input) free_tensor(input);

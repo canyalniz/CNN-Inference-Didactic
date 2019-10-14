@@ -35,8 +35,8 @@ DenseLayer *empty_Dense(int n_kb, int d_kb, int h_kb, int w_kb);
 DenseLayer *new_Dense(int n_kb, int d_kb, int h_kb, int w_kb, float **** weights_array, float * biases_array);
 
 //Tensor operations
-Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer);
-Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input, int free_layer);
+Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input);
+Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input);
 Tensor *sigmoid_activation(Tensor *input, int free_input);
 Tensor *ReLU_activation(Tensor *input, int free_input);
 Tensor *linear_activation(Tensor *input, int free_input);

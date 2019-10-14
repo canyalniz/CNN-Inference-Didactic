@@ -37,17 +37,22 @@ int main(){
     Tensor *x, *output;
 
     start = clock();
-    x = Conv(input, conv1, ReLU_activation, 1, 1);
+    x = Conv(input, conv1, ReLU_activation, 1);
     x = MaxPool(x, 3, 3, 2, 2, 1);
-    x = Conv(x, conv2, ReLU_activation, 1, 1);
+    x = Conv(x, conv2, ReLU_activation, 1);
     x = MaxPool(x, 3, 3, 2, 2, 1);
     x = FlattenD(x, 1);
-    x = Dense(x, fc, ReLU_activation, 1, 1);
-    output = Dense(x, out, linear_activation, 1, 1); //This used to be a sigmoid activation but for clarity I changed the model's activation to linear
+    x = Dense(x, fc, ReLU_activation, 1);
+    output = Dense(x, out, linear_activation, 1); //This used to be a sigmoid activation but for clarity I changed the model's activation to linear
     end = clock();
     print_tensor(output);
     cpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;
-    printf("\nTime taken: %f", cpu_time_used);
+    printf("\nInference completed in: %f", cpu_time_used);
+
+    free_ConvLayer(conv1);
+    free_ConvLayer(conv2);
+    free_DenseLayer(fc);
+    free_DenseLayer(out);
 
     return 0;
 }
