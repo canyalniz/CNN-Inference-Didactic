@@ -17,7 +17,7 @@
  * @param stride_y Stride of kernel window on the y axis(vertical)
  * @param padding Option from padding_mode (VALID or SAME). VALID means no padding will be done, 
  * SAME means the input tensor will be padded in such a way that the output of the following convolution operation will
- * have the same height and width as those of the input tensor.
+ * have the same height and width as the input tensor.
  * 
  * @sa new_Conv(), padding_mode
  * 
@@ -59,7 +59,7 @@ ConvLayer *empty_Conv(int n_kb, int d_kb, int h_kb, int w_kb, int stride_x, int 
  * @param stride_y Stride of kernel window on the y axis(vertical)
  * @param padding Option from padding_mode (VALID or SAME). VALID means no padding will be done, 
  * SAME means the input tensor will be padded in such a way that the output of the following convolution operation will
- * have the same height and width as those of the input tensor.
+ * have the same height and width as the input tensor.
  * 
  * @sa empty_Conv()
  * 
@@ -173,7 +173,10 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
     }
 
     if(layer->padding==SAME){
-        input = apply_same_padding(input, layer, free_input);
+        int padding_x, padding_y;
+        padding_x = layer->stride_x * (input->dims[2]-1) - input->dims[2] + layer->kernel_box_dims[2]; // left + right
+        padding_y = layer->stride_y * (input->dims[1]-1) - input->dims[1] + layer->kernel_box_dims[1]; // top + bottom
+        input = apply_padding(input, padding_x, padding_y, free_input);
         free_input = 1; // if the padding operation makes 'input' point to a copy of the original input then freeing 'input' is safe
     }
 
@@ -382,18 +385,15 @@ Tensor *linear_activation(Tensor *input, int free_input){
  * right side of the tensor will get the additional padding.
  * 
  * @param input Input tensor
- * @param layer Convolution layer which requires SAME padding
+ * @param padding_x Padding to the left + Padding to the right in pixels
+ * @param padding_x Padding to the top + Padding to the bottom in pixels
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
  * 
  * @sa padding_mode
  * 
  * @return The output tensor
 */
-Tensor *apply_same_padding(Tensor *input, ConvLayer *layer, int free_input){
-    int padding_x, padding_y;
-    padding_x = layer->stride_x * (input->dims[2]-1) - input->dims[2] + layer->kernel_box_dims[2]; // left + right
-    padding_y = layer->stride_y * (input->dims[1]-1) - input->dims[1] + layer->kernel_box_dims[1]; // top + bottom
-
+Tensor *apply_padding(Tensor *input, int padding_x, int padding_y, int free_input){
     int output_d = input->dims[0];
     int output_h = input->dims[1] + padding_y;
     int output_w = input->dims[2] + padding_x;
@@ -459,11 +459,22 @@ Tensor *apply_same_padding(Tensor *input, ConvLayer *layer, int free_input){
  * @param width Width of the pooling window
  * @param stride_x Stride of kernel window on the x axis(horizontal)
  * @param stride_y Stride of kernel window on the y axis(vertical)
+ * @param padding Option from padding_mode (VALID or SAME). VALID means no padding will be done, 
+ * SAME means the input tensor will be padded in such a way that the output of the following pooling operation will
+ * have the same height and width as the input tensor.
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
  * 
  * @return The output tensor
 */
-Tensor *MaxPool(Tensor *input, int height, int width, int stride_x, int stride_y, int free_input){
+Tensor *MaxPool(Tensor *input, int height, int width, int stride_x, int stride_y, padding_mode padding, int free_input){
+    if(padding==SAME){
+        int padding_x, padding_y;
+        padding_x = stride_x * (input->dims[2]-1) - input->dims[2] + width; // left + right
+        padding_y = stride_y * (input->dims[1]-1) - input->dims[1] + height; // top + bottom
+        input = apply_padding(input, padding_x, padding_y, free_input);
+        free_input = 1; // if the padding operation makes 'input' point to a copy of the original input then freeing 'input' is safe
+    }
+
     int output_d = input->dims[0];
     int output_w, output_h;
     output_w = ((input->dims[1] - height)/stride_x)+1; // The same formula from the Conv layer

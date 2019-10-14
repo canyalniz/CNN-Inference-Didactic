@@ -19,11 +19,11 @@ int main(){
     //Before you can load the weights of the model you need to run weights_to_txt.py
     //The txt files need to be in the directory
     ConvLayer *conv1;
-    conv1 = empty_Conv(32, 3, 3, 3, 2, 2, 0);
+    conv1 = empty_Conv(32, 3, 3, 3, 2, 2, VALID);
     load_Conv(conv1, 1); 
 
     ConvLayer *conv2;
-    conv2 = empty_Conv(32, 32, 3, 3, 1, 1, 1);
+    conv2 = empty_Conv(32, 32, 3, 3, 1, 1, SAME);
     load_Conv(conv2, 4);
     
     DenseLayer *fc;
@@ -38,9 +38,9 @@ int main(){
 
     start = clock();
     x = Conv(input, conv1, ReLU_activation, 1);
-    x = MaxPool(x, 3, 3, 2, 2, 1);
+    x = MaxPool(x, 3, 3, 2, 2, VALID, 1);
     x = Conv(x, conv2, ReLU_activation, 1);
-    x = MaxPool(x, 3, 3, 2, 2, 1);
+    x = MaxPool(x, 3, 3, 2, 2, VALID, 1);
     x = FlattenD(x, 1);
     x = Dense(x, fc, ReLU_activation, 1);
     output = Dense(x, out, linear_activation, 1); //This used to be a sigmoid activation but for clarity I changed the model's activation to linear
