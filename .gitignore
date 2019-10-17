@@ -2,5 +2,13 @@
 *.jpg
 *.txt
 *.h5
+*.html
+*.png
+*.js
+*.css
+*.tex
+*.sty
+*.bat
+Makefile
 model.c
 driver.py
