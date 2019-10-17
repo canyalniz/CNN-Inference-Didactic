@@ -2,3 +2,5 @@
 *.jpg
 *.txt
 *.h5
+model.c
+driver.py

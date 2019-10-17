@@ -6,6 +6,10 @@ In this repositary you will find a C library written with didactic intentions us
 
 This library uses a channels first convention. Anyone can read the code with this in mind, but in order to run experiments by replicating your model, its weights must be configured accordingly.
 
+## Documentation
+
+In order to generate the documentation for this framework, open terminal/command prompt in the directory and run `doxygen Doxyfile`. Two versions of the documentation will be generated(one in html, one in LaTeX). In order to view the documentation website, open **/html/index.html** in your browser.
+
 ## Preparing the Input
 
 The input to your Convolutional Neural Network must be an RGB image. In order to prepare your input images for inference, you must run **rgb_prep.py** with the arguments `<path/to/image> <CNN input height> <CNN input width>`. This will automatically generate the input files for the C model to read.

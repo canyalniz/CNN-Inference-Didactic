@@ -2,7 +2,7 @@
 
 /** \defgroup layergenerators Layer Generators */
 
-/** \defgroup tensoroperations Tensor *Operations */
+/** \defgroup tensoroperations Tensor Operations */
 
 /** \defgroup utilityfunctions Utility Functions */
 
