@@ -4,7 +4,7 @@
 
 #define MAX_FN 50
 
-void load_Conv(ConvLayer *layer, int layer_id);
-void load_Dense(DenseLayer *layer, int layer_id);
+void load_Conv(ConvLayer *layer, char *layer_name);
+void load_Dense(DenseLayer *layer, char *layer_name);
 
 #endif
