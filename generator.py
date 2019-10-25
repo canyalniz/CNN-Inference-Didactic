@@ -7,10 +7,6 @@ from keras.preprocessing import image
 def generate(model):
     """ Generates the driver for the inference library """
 
-    if not isinstance(model.layers[0], keras.engine.input_layer.InputLayer):
-        print("The first layer of your model must be the input layer!")
-        sys.exit()
-    
     weights = []
     config = []
     for layer in model.layers:
@@ -20,8 +16,8 @@ def generate(model):
     f = open("model.c", "w+")
     f.write('#include "cnn_inference.h"\n#include "h5_format.h"\n#include "rgb_format.h"\n#include <time.h>\n')
     f.write('\nint main(int argc, char *argv[]){\n\n')
-    f.write('\tif(argc!=2){\n\tprintf("\nPlease run as: model.c <image_name>. Image name must be given without the 0,1,2 and without its extension.");\n\texit(EXIT_FAILURE);\n}')
-    f.write('\tclock_t start, end;\n\tdouble cpu_time_used;\n\n')
+    f.write('\tif(argc!=2){\n\t\tprintf("\\nPlease run as: model.c <image_name>. Image name must be given without the 0,1,2 and without its extension.\\n");\n\t\texit(EXIT_FAILURE);\n\t}\n')
+    f.write('\n\tclock_t start, end;\n\tdouble cpu_time_used;\n\n')
     
     f.write('\t//Prepare Input\n')
     f.write('\tfloat ***img;\n\timg = load_RGB(argv[1], {0}, {1});\n\n'.format(config[0]['batch_input_shape'][2], config[0]['batch_input_shape'][3]))
