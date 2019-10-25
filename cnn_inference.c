@@ -347,14 +347,13 @@ Tensor *ReLU_activation(Tensor *input, int free_input){
  * Carries out the ELU activation
  * 
  * @param input Input tensor
- * @param alpha Alpha parameter of a classical ELU activation
  * @param free_input Whether to free or overwrite the input tensor, if free_input==1 then the input tensor is lost
  * 
  * @sa sigmoid_activation(), linear_activation(), ReLU_activation()
  * 
  * @return The output tensor
 */
-Tensor *ELU_activation(Tensor *input, float alpha, int free_input){
+Tensor *ELU_activation(Tensor *input, int free_input){
     Tensor *output;
     int d,h,w;
 
@@ -368,7 +367,7 @@ Tensor *ELU_activation(Tensor *input, float alpha, int free_input){
     for(d=0; d<output->dims[0]; d++){
         for(h=0; h<output->dims[1]; h++){
             for(w=0; w<output->dims[2]; w++){
-                output->T[d][h][w] = (input->T[d][h][w] < 0) ? (alpha * ((float) exp(input->T[d][h][w])-1)) : input->T[d][h][w];
+                output->T[d][h][w] = (input->T[d][h][w] < 0) ? ((float) exp(input->T[d][h][w])-1) : input->T[d][h][w];
             }
         }
     }

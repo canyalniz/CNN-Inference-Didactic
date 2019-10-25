@@ -62,6 +62,7 @@ Tensor *Conv(Tensor *input, ConvLayer *layer, Tensor *(*activation)(Tensor *,int
 Tensor *Dense(Tensor *input, DenseLayer *layer, Tensor *(*activation)(Tensor *,int), int free_input);
 Tensor *sigmoid_activation(Tensor *input, int free_input);
 Tensor *ReLU_activation(Tensor *input, int free_input);
+Tensor *ELU_activation(Tensor *input, int free_input);
 Tensor *linear_activation(Tensor *input, int free_input);
 Tensor *apply_padding(Tensor *input, int padding_x, int padding_y, int free_input);
 Tensor *MaxPool(Tensor *input, int height, int width, int stride_x, int stride_y, padding_mode padding, int free_input);

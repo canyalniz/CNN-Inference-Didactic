@@ -42,6 +42,10 @@ def generate(model):
                 activation = "ReLU_activation"
             elif layer.get_config()['activation'].upper() == "LINEAR":
                 activation = "linear_activation"
+            elif layer.get_config()['activation'].upper() == "SIGMOID":
+                activation = "sigmoid_activation"
+            elif layer.get_config()['activation'].upper() == "ELU":
+                activation = "ELU_activation"
     
             f.write('\tt = Conv(t, _{0}, {1}, 1);\n'.format(layer.name, activation))
         
@@ -50,6 +54,10 @@ def generate(model):
                 activation = "ReLU_activation"
             elif layer.get_config()['activation'].upper() == "LINEAR":
                 activation = "linear_activation"
+            elif layer.get_config()['activation'].upper() == "SIGMOID":
+                activation = "sigmoid_activation"
+            elif layer.get_config()['activation'].upper() == "ELU":
+                activation = "ELU_activation"
             
             f.write('\tt = Dense(t, _{0}, {1}, 1);\n'.format(layer.name, activation))
         
@@ -58,6 +66,16 @@ def generate(model):
         
         elif isinstance(layer, keras.layers.core.Flatten):
             f.write('\tt = FlattenD(t, 1);\n')
+            
+        elif isinstance(layer, keras.layers.core.Activation):
+            if layer.get_config()['activation'].upper() == "RELU":
+                f.write('\tt = ReLU_activation(t, 1);\n')
+            elif layer.get_config()['activation'].upper() == "LINEAR":
+                f.write('\tt = linear_activation(t, 1);\n')
+            elif layer.get_config()['activation'].upper() == "SIGMOID":
+                f.write('\tt = sigmoid_activation(t, 1);\n')
+            elif layer.get_config()['activation'].upper() == "ELU":
+                f.write('\tt = ELU_activation(t, 1);\n')
     
     f.write('\n\tend = clock();\n\n\tprint_tensor(t);\n\n\tcpu_time_used = ((double) (end - start)) / CLOCKS_PER_SEC;\n\tprintf("\\nInference completed in: %f", cpu_time_used);\n\n')
     
