@@ -1,4 +1,4 @@
-#include "jpg_format.h"
+#include "rgb_format.h"
 
 float ***load_RGB(char *image_name, int h, int w){
     FILE *fp;
